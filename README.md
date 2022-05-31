@@ -1,28 +1,36 @@
 # SwiftCompressor
 
-[![CI Status](http://img.shields.io/travis/DroidsOnRoids/SwiftCompressor.svg?style=flat)](https://travis-ci.org/DroidsOnRoids/SwiftCompressor)
-[![codecov](https://codecov.io/gh/DroidsOnRoids/SwiftCompressor/branch/master/graph/badge.svg)](https://codecov.io/gh/DroidsOnRoids/SwiftCompressor)
 [![Version](https://img.shields.io/cocoapods/v/SwiftCompressor.svg?style=flat)](http://cocoapods.org/pods/SwiftCompressor)
 [![License](https://img.shields.io/cocoapods/l/SwiftCompressor.svg?style=flat)](http://cocoapods.org/pods/SwiftCompressor)
 [![Platform](https://img.shields.io/cocoapods/p/SwiftCompressor.svg?style=flat)](http://cocoapods.org/pods/SwiftCompressor)
+[![Swift Package Manager compatible](https://img.shields.io/badge/Swift_Package_Manager-compatible-4BC51D.svg)](https://www.swift.org/package-manager/)
 
 ## Requirements
-
-iOS 9.0+, macOS 10.11+, watchOS 2.0+, tvOS 9.0+
-
-Swift 3
-
-## Example
-
-To run the example project, clone the repo, and run `pod install` from the Example directory first.
+* iOS 9.0+, macOS 10.11+, watchOS 2.0+, tvOS 9.0+
+* Swift 5.x
 
 ## Installation
 
-SwiftCompressor is available through [CocoaPods](http://cocoapods.org). To install
-it, simply add the following line to your Podfile:
+### Package Manager
+
+You can add SwiftCompressor to an Xcode project by adding it as a package dependency.
+
+  1. From the **File** menu, select **Add Packages…**
+  2. Enter `https://github.com/sochalewski/SwiftCompressor` into the package repository URL text field.
+  3. Add the package to your app target.
+
+### CocoaPods
+
+To integrate SwiftCompressor into your Xcode project using CocoaPods, specify it in your `Podfile`:
 
 ```ruby
-pod "SwiftCompressor"
+pod 'SwiftCompressor'
+```
+
+Then, run the following command:
+
+```bash
+$ pod install
 ```
 
 ## Usage
@@ -36,7 +44,7 @@ let loremData = try? Data(contentsOf: path)
 
 // Compress and then decompress it!
 let compressedData = try? loremData?.compress()
-let decompressedData = try? compressedData??.decompress()
+let decompressedData = try? compressedData?.decompress()
 
 // You can also choose one of four algorithms and set a buffer size if you want.
 // Available algorithms are LZFSE, LZMA, ZLIB and LZ4.
@@ -47,7 +55,7 @@ let compressWithLZMAReallyBigBuffer = try? loremData?.compress(algorithm: .lzma,
 
 ## Author
 
-Piotr Sochalewski, piotr.sochalewski@droidsonroids.com
+Piotr Sochalewski, <a href="http://sochalewski.github.io">sochalewski.github.io</a>
 
 ## License
 

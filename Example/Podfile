@@ -1,9 +1,0 @@
-use_frameworks!
-
-target 'SwiftCompressor_Example' do
-  pod 'SwiftCompressor', :path => '../'
-
-  target 'SwiftCompressor_Tests' do
-    inherit! :search_paths
-  end
-end
