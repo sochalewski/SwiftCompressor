@@ -35,6 +35,8 @@ Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deseru
     
     // MARK: - Compression and decompression
     
+    // MARK: Synchronous
+    
     func testCompressionAndDecompressionLZFSE() {
         testCompressionAndCompression(algorithm: .lzfse)
     }
@@ -57,6 +59,77 @@ Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deseru
         
         XCTAssertGreaterThan(uncompressedLoremData!.count, compressedLoremData!.count, "The compressed data should be smaller than the uncompressed data.")
         XCTAssertEqual(loremData, uncompressedLoremData!, "The data before compression and after decompression should be the same.")
+    }
+    
+    // MARK: Asynchronous
+    
+    func testCompressionAndDecompressionAsyncLZFSE() {
+        testCompressionAndCompressionAsync(algorithm: .lzfse)
+    }
+    
+    func testCompressionAndDecompressionAsyncLZ4() {
+        testCompressionAndCompressionAsync(algorithm: .lz4)
+    }
+    
+    func testCompressionAndDecompressionAsyncZLIB() {
+        testCompressionAndCompressionAsync(algorithm: .zlib)
+    }
+    
+    func testCompressionAndDecompressionAsyncLZMA() {
+        testCompressionAndCompressionAsync(algorithm: .lzma)
+    }
+    
+    private func testCompressionAndCompressionAsync(algorithm: CompressionAlgorithm) {
+        let expectation = self.expectation(description: "Async test for \(algorithm)")
+        
+        var compressedLoremData: Data!
+        var uncompressedLoremData: Data!
+        
+        loremData.compress(algorithm: algorithm) { result in
+            guard case .success(let data) = result else { XCTFail(); return }
+            compressedLoremData = data
+            
+            compressedLoremData.decompress(algorithm: algorithm) { result in
+                guard case .success(let data) = result else { XCTFail(); return }
+                uncompressedLoremData = data
+                
+                expectation.fulfill()
+            }
+        }
+        
+        waitForExpectations(timeout: 10)
+        
+        XCTAssertGreaterThan(uncompressedLoremData!.count, compressedLoremData!.count, "The compressed data should be smaller than the uncompressed data.")
+        XCTAssertEqual(loremData, uncompressedLoremData!, "The data before compression and after decompression should be the same.")
+    }
+    
+    @available(iOS 13.0, macOS 10.15, watchOS 6.0, tvOS 13.0, *)
+    func testCompressionAndDecompressionAsyncAwaitLZFSE() async throws {
+        try await testCompressionAndCompressionAsyncAwait(algorithm: .lzfse)
+    }
+    
+    @available(iOS 13.0, macOS 10.15, watchOS 6.0, tvOS 13.0, *)
+    func testCompressionAndDecompressionAsyncAwaitLZ4() async throws {
+        try await testCompressionAndCompressionAsyncAwait(algorithm: .lz4)
+    }
+    
+    @available(iOS 13.0, macOS 10.15, watchOS 6.0, tvOS 13.0, *)
+    func testCompressionAndDecompressionAsyncAwaitZLIB() async throws {
+        try await testCompressionAndCompressionAsyncAwait(algorithm: .zlib)
+    }
+    
+    @available(iOS 13.0, macOS 10.15, watchOS 6.0, tvOS 13.0, *)
+    func testCompressionAndDecompressionAsyncAwaitLZMA() async throws {
+        try await testCompressionAndCompressionAsyncAwait(algorithm: .lzma)
+    }
+    
+    @available(iOS 13.0, macOS 10.15, watchOS 6.0, tvOS 13.0, *)
+    private func testCompressionAndCompressionAsyncAwait(algorithm: CompressionAlgorithm) async throws {
+        let compressedLoremData = try await loremData.compress(algorithm: algorithm)
+        let uncompressedLoremData = try await compressedLoremData.decompress(algorithm: algorithm)
+        
+        XCTAssertGreaterThan(uncompressedLoremData.count, compressedLoremData.count, "The compressed data should be smaller than the uncompressed data.")
+        XCTAssertEqual(loremData, uncompressedLoremData, "The data before compression and after decompression should be the same.")
     }
     
     // MARK: - Buffer size performance comparision

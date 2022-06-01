@@ -15,7 +15,7 @@ import Compression
  - `.lzma`: High compression
  - `.lzfse`: Apple-specific high performance compression
  */
-@available(iOS 9.0, OSX 10.11, watchOS 2.0, tvOS 9.0, *)
+@available(iOS 9.0, macOS 10.11, watchOS 2.0, tvOS 9.0, *)
 public enum CompressionAlgorithm {
     /**
      The LZ4 compression algorithm, that is recommended for fast compression.
@@ -40,7 +40,7 @@ public enum CompressionAlgorithm {
     case lzfse
 }
 
-@available(iOS 9.0, OSX 10.11, watchOS 2.0, tvOS 9.0, *)
+@available(iOS 9.0, macOS 10.11, watchOS 2.0, tvOS 9.0, *)
 public enum CompressionError: Error {
     /**
      The error received when trying to compress/decompress empty data (when length equals zero).
@@ -58,19 +58,21 @@ public enum CompressionError: Error {
     case processError
 }
 
-@available(iOS 9.0, OSX 10.11, watchOS 2.0, tvOS 9.0, *)
+@available(iOS 9.0, macOS 10.11, watchOS 2.0, tvOS 9.0, *)
 extension Data {
+    // MARK: - Synchronous
+    
     /**
-     Returns a Data object created by compressing the receiver using the given compression algorithm.
-     - parameter algorithm: one of four compression algorithms to use during compression
-     - parameter bufferSize: the size of buffer in bytes to use during compression
+     Compresses the receiver using the given compression algorithm and buffer size.
+     - parameter algorithm: one of four compression algorithms to use during compression.
+     - parameter bufferSize: the size of buffer in bytes to use during compression.
      - returns: A `Data` object created by encoding the receiver's contents using the provided compression algorithm.
      */
     public func compress(
         algorithm: CompressionAlgorithm = .lzfse,
         bufferSize: size_t = 4096
-    ) throws -> Data? {
-        return try compress(
+    ) throws -> Data {
+        try compress(
             algorithm: algorithm,
             operation: .compression,
             bufferSize: bufferSize
@@ -78,21 +80,113 @@ extension Data {
     }
     
     /**
-     Returns a `Data` object by uncompressing the receiver using the given compression algorithm.
-     - parameter algorithm: one of four compression algorithms to use during decompression
-     - parameter bufferSize: the size of buffer in bytes to use during decompression
+     Uncompresses the receiver using the given compression algorithm.
+     - parameter algorithm: one of four compression algorithms to use during decompression.
+     - parameter bufferSize: the size of buffer in bytes to use during decompression.
      - returns: A `Data` object created by decoding the receiver's contents using the provided compression algorithm.
      */
     public func decompress(
         algorithm: CompressionAlgorithm = .lzfse,
         bufferSize: size_t = 4096
-    ) throws -> Data? {
-        return try compress(
+    ) throws -> Data {
+        try compress(
             algorithm: algorithm,
             operation: .decompression,
             bufferSize: bufferSize
         )
     }
+    
+    // MARK: - Asynchronous
+    
+    /**
+     Compresses the receiver using the given compression algorithm and buffer size.
+     - parameter algorithm: one of four compression algorithms to use during compression.
+     - parameter bufferSize: the size of buffer in bytes to use during compression.
+     - parameter completion: A `Result` containing the encoded receiver's contents using the provided compression algorithm or an error.
+     */
+    public func compress(
+        algorithm: CompressionAlgorithm = .lzfse,
+        bufferSize: size_t = 4096,
+        completion: @escaping (Result<Data, CompressionError>) -> Void
+    ) {
+        DispatchQueue.main.async {
+            do {
+                let data = try compress(
+                    algorithm: algorithm,
+                    operation: .compression,
+                    bufferSize: bufferSize
+                )
+                completion(.success(data))
+            } catch let error {
+                guard let error = error as? CompressionError else { return }
+                completion(.failure(error))
+            }
+        }
+    }
+    
+    /**
+     Compresses the receiver using the given compression algorithm and buffer size.
+     - parameter algorithm: one of four compression algorithms to use during compression.
+     - parameter bufferSize: the size of buffer in bytes to use during compression.
+     - returns: A `Data` object created by encoding the receiver's contents using the provided compression algorithm.
+     */
+    @available(iOS 13.0, macOS 10.15, watchOS 6.0, tvOS 13.0, *)
+    public func compress(
+        algorithm: CompressionAlgorithm = .lzfse,
+        bufferSize: size_t = 4096
+    ) async throws -> Data {
+        try await withCheckedThrowingContinuation { continuation  in
+            compress(algorithm: algorithm, bufferSize: bufferSize) { result in
+                continuation.resume(with: result)
+            }
+        }
+    }
+    
+    /**
+     Uncompresses the receiver using the given compression algorithm.
+     - parameter algorithm: one of four compression algorithms to use during decompression.
+     - parameter bufferSize: the size of buffer in bytes to use during decompression.
+     - parameter completion: A `Result` containing the decoded receiver's contents using the provided compression algorithm or an error.
+     */
+    public func decompress(
+        algorithm: CompressionAlgorithm = .lzfse,
+        bufferSize: size_t = 4096,
+        completion: @escaping (Result<Data, CompressionError>) -> Void
+    ) {
+        DispatchQueue.main.async {
+            do {
+                let data = try compress(
+                    algorithm: algorithm,
+                    operation: .decompression,
+                    bufferSize: bufferSize
+                )
+                completion(.success(data))
+            } catch let error {
+                guard let error = error as? CompressionError else { return }
+                completion(.failure(error))
+            }
+        }
+    }
+    
+    /**
+     Uncompresses the receiver using the given compression algorithm.
+     - parameter algorithm: one of four compression algorithms to use during decompression.
+     - parameter bufferSize: the size of buffer in bytes to use during decompression.
+     - returns: A `Data` object created by decoding the receiver's contents using the provided compression algorithm.
+     */
+    @available(iOS 13.0, macOS 10.15, watchOS 6.0, tvOS 13.0, *)
+    public func decompress(
+        algorithm: CompressionAlgorithm = .lzfse,
+        bufferSize: size_t = 4096
+    ) async throws -> Data {
+        try await withCheckedThrowingContinuation { continuation  in
+            decompress(algorithm: algorithm, bufferSize: bufferSize) { result in
+                continuation.resume(with: result)
+            }
+        }
+    }
+    
+    // MARK: - Other
     
     private enum Operation {
         case compression
@@ -103,7 +197,7 @@ extension Data {
         algorithm: CompressionAlgorithm,
         operation: Operation,
         bufferSize: size_t
-    ) throws -> Data? {
+    ) throws -> Data {
         // Throw an error when data to (de)compress is empty.
         guard count > 0 else { throw CompressionError.emptyData }
         
@@ -191,6 +285,6 @@ extension Data {
             }
         } while status == COMPRESSION_STATUS_OK
         
-        return outputData.copy() as? Data
+        return outputData as Data
     }
 }
